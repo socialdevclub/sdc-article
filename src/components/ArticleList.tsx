@@ -15,6 +15,7 @@ export const ArticleList = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [sortOption, setSortOption] = useState<SortOption>("latest");
+  const [showLikedOnly, setShowLikedOnly] = useState(false);
 
   const fetchArticles = async () => {
     try {
@@ -28,24 +29,81 @@ export const ArticleList = () => {
         query = query.eq("category", selectedCategory);
       }
 
+      // Liked only filter
+      if (showLikedOnly) {
+        const user = await supabase.auth.getUser();
+        if (!user.data.user) {
+          setError("좋아요한 글을 보려면 로그인이 필요합니다.");
+          setLoading(false);
+          return;
+        }
+        
+        // Get articles that the user liked
+        const { data: likedArticles } = await supabase
+          .from("likes")
+          .select("article_id")
+          .eq("user_id", user.data.user.id);
+        
+        if (!likedArticles || likedArticles.length === 0) {
+          setArticles([]);
+          setLoading(false);
+          return;
+        }
+        
+        const likedArticleIds = likedArticles.map(like => like.article_id);
+        query = query.in("id", likedArticleIds);
+      }
+
       // Sort options
       switch (sortOption) {
         case "latest":
           query = query.order("published_at", { ascending: false });
           break;
         case "daily":
-          query = query.order("daily_views", { ascending: false });
-          break;
+        case "weekly":
         case "monthly":
-          query = query.order("monthly_views", { ascending: false });
-          break;
-        case "yearly":
-          query = query.order("yearly_views", { ascending: false });
-          break;
+          // For popularity sorting, we'll get all articles and then sort by likes count
+          const { data: articlesData, error: articlesError } = await query;
+          if (articlesError) throw articlesError;
+          
+          if (articlesData) {
+            // Get likes count for each article with time filter
+            const now = new Date();
+            let timeFilter: Date;
+            
+            switch (sortOption) {
+              case "daily":
+                timeFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                break;
+              case "weekly":
+                timeFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+              case "monthly":
+                timeFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            }
+            
+            const articlesWithLikes = await Promise.all(
+              articlesData.map(async (article) => {
+                const { count } = await supabase
+                  .from("likes")
+                  .select("*", { count: "exact", head: true })
+                  .eq("article_id", article.id)
+                  .gte("created_at", timeFilter!.toISOString());
+                
+                return { ...article, likesCount: count || 0 };
+              })
+            );
+            
+            // Sort by likes count descending
+            articlesWithLikes.sort((a, b) => b.likesCount - a.likesCount);
+            setArticles(articlesWithLikes.slice(0, 50));
+          }
+          setLoading(false);
+          return;
       }
 
       const { data, error } = await query.limit(50);
-
       if (error) throw error;
       setArticles(data || []);
     } catch (err) {
@@ -58,7 +116,7 @@ export const ArticleList = () => {
 
   useEffect(() => {
     fetchArticles();
-  }, [selectedCategory, sortOption]);
+  }, [selectedCategory, sortOption, showLikedOnly]);
 
   if (error) {
     return (
@@ -69,6 +127,8 @@ export const ArticleList = () => {
           onCategoryChange={setSelectedCategory}
           onSortChange={setSortOption}
           totalCount={0}
+          showLikedOnly={showLikedOnly}
+          onLikedOnlyChange={setShowLikedOnly}
         />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Alert variant="destructive">
@@ -88,6 +148,8 @@ export const ArticleList = () => {
         onCategoryChange={setSelectedCategory}
         onSortChange={setSortOption}
         totalCount={articles.length}
+        showLikedOnly={showLikedOnly}
+        onLikedOnlyChange={setShowLikedOnly}
       />
 
       <div className="max-w-7xl mx-auto px-4 py-8">

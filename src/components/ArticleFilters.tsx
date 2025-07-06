@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { SlidersHorizontal, Heart } from "lucide-react";
 
 export const CATEGORIES = [
   "전체",
@@ -11,7 +12,7 @@ export const CATEGORIES = [
   "백엔드",
   "데이터엔지니어링",
   "DevOps",
-  "인공지능",
+  "AI",
   "SW엔지니어링",
   "개발툴",
   "개발팁",
@@ -22,7 +23,7 @@ export const CATEGORIES = [
   "HR"
 ];
 
-export type SortOption = "latest" | "daily" | "monthly" | "yearly";
+export type SortOption = "latest" | "daily" | "weekly" | "monthly";
 
 interface ArticleFiltersProps {
   selectedCategory: string;
@@ -30,6 +31,8 @@ interface ArticleFiltersProps {
   onCategoryChange: (category: string) => void;
   onSortChange: (sort: SortOption) => void;
   totalCount: number;
+  showLikedOnly: boolean;
+  onLikedOnlyChange: (showLikedOnly: boolean) => void;
 }
 
 export const ArticleFilters = ({
@@ -37,14 +40,16 @@ export const ArticleFilters = ({
   sortOption,
   onCategoryChange,
   onSortChange,
-  totalCount
+  totalCount,
+  showLikedOnly,
+  onLikedOnlyChange
 }: ArticleFiltersProps) => {
   const getSortLabel = (option: SortOption) => {
     switch (option) {
       case "latest": return "최신순";
       case "daily": return "일간 인기";
+      case "weekly": return "주간 인기";
       case "monthly": return "월간 인기";
-      case "yearly": return "연간 인기";
     }
   };
 
@@ -69,10 +74,22 @@ export const ArticleFilters = ({
             <SelectContent>
               <SelectItem value="latest">최신순</SelectItem>
               <SelectItem value="daily">일간 인기</SelectItem>
+              <SelectItem value="weekly">주간 인기</SelectItem>
               <SelectItem value="monthly">월간 인기</SelectItem>
-              <SelectItem value="yearly">연간 인기</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Liked Only Filter */}
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Heart className="w-4 h-4 text-red-500" />
+            <span className="text-sm">좋아요한 글만</span>
+            <Switch
+              checked={showLikedOnly}
+              onCheckedChange={onLikedOnlyChange}
+            />
+          </div>
         </div>
 
         {/* Category Filters */}

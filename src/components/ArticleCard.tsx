@@ -1,7 +1,10 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ExternalLink, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, ExternalLink, Heart } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client";
 
 type Article = Tables<"articles">;
 
@@ -10,6 +13,10 @@ interface ArticleCardProps {
 }
 
 export const ArticleCard = ({ article }: ArticleCardProps) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleClick = () => {
     window.open(article.source_url, '_blank');
   };
@@ -22,11 +29,72 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
     });
   };
 
-  const formatViewCount = (count: number) => {
-    if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}k`;
+  useEffect(() => {
+    fetchLikesData();
+  }, [article.id]);
+
+  const fetchLikesData = async () => {
+    // Get likes count
+    const { count } = await supabase
+      .from("likes")
+      .select("*", { count: "exact", head: true })
+      .eq("article_id", article.id);
+    
+    setLikesCount(count || 0);
+
+    // Check if current user liked this article
+    const user = await supabase.auth.getUser();
+    if (user.data.user) {
+      const { data } = await supabase
+        .from("likes")
+        .select("id")
+        .eq("article_id", article.id)
+        .eq("user_id", user.data.user.id)
+        .single();
+      
+      setIsLiked(!!data);
     }
-    return count.toString();
+  };
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) {
+      alert("좋아요를 누르려면 로그인이 필요합니다.");
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      if (isLiked) {
+        // Unlike
+        await supabase
+          .from("likes")
+          .delete()
+          .eq("article_id", article.id)
+          .eq("user_id", user.data.user.id);
+        
+        setIsLiked(false);
+        setLikesCount(prev => prev - 1);
+      } else {
+        // Like
+        await supabase
+          .from("likes")
+          .insert({
+            article_id: article.id,
+            user_id: user.data.user.id
+          });
+        
+        setIsLiked(true);
+        setLikesCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -77,17 +145,28 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
                 <span>{formatDate(article.published_at)}</span>
               </div>
               
-              {/* Views */}
+              {/* Likes */}
               <div className="flex items-center gap-1">
-                <Eye className="w-3 h-3" />
-                <span>{formatViewCount(article.view_count)}</span>
+                <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+                <span>{likesCount}</span>
               </div>
             </div>
 
-            {/* Source & External Link */}
+            {/* Source & Actions */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">{article.source_name}</span>
-              <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLike}
+                  disabled={isLoading}
+                  className="h-6 w-6 p-0"
+                >
+                  <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'}`} />
+                </Button>
+                <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
             </div>
           </div>
         </div>

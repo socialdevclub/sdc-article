@@ -14,51 +14,68 @@ export type Database = {
           category: string
           content_summary: string
           created_at: string
-          daily_views: number
           id: string
-          monthly_views: number
           published_at: string
           source_name: string
           source_url: string
           thumbnail_url: string | null
           title: string
           updated_at: string
-          view_count: number
-          yearly_views: number
         }
         Insert: {
           category: string
           content_summary: string
           created_at?: string
-          daily_views?: number
           id?: string
-          monthly_views?: number
           published_at: string
           source_name: string
           source_url: string
           thumbnail_url?: string | null
           title: string
           updated_at?: string
-          view_count?: number
-          yearly_views?: number
         }
         Update: {
           category?: string
           content_summary?: string
           created_at?: string
-          daily_views?: number
           id?: string
-          monthly_views?: number
           published_at?: string
           source_name?: string
           source_url?: string
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
-          view_count?: number
-          yearly_views?: number
         }
         Relationships: []
+      }
+      likes: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
