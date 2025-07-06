@@ -14,7 +14,6 @@ export const CATEGORIES = [
   "DevOps",
   "AI",
   "SW엔지니어링",
-  "개발툴",
   "개발팁",
   "QA",
   "PM/기획",
