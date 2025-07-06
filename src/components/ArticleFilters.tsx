@@ -54,7 +54,7 @@ export const ArticleFilters = ({
   };
 
   return (
-    <div className="bg-card border-b border-border sticky top-0 z-10 backdrop-blur-sm bg-card/90">
+    <div className="bg-card border-b border-border md:sticky md:top-0 z-10 backdrop-blur-sm bg-card/90">
       <div className="max-w-7xl mx-auto px-4 py-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
