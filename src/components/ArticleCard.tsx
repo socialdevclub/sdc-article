@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, ExternalLink, Heart } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
+import { LoginDialog } from "./LoginDialog";
 
 type Article = Tables<"articles">;
 
@@ -16,6 +17,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const handleClick = () => {
     window.open(article.source_url, '_blank');
@@ -61,7 +63,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
     
     const user = await supabase.auth.getUser();
     if (!user.data.user) {
-      alert("좋아요를 누르려면 로그인이 필요합니다.");
+      setShowLoginDialog(true);
       return;
     }
 
@@ -97,80 +99,92 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
     }
   };
 
+  const handleLoginSuccess = () => {
+    fetchLikesData();
+  };
+
   return (
-    <Card 
-      className="group cursor-pointer bg-gradient-card border-border shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1"
-      onClick={handleClick}
-    >
-      <CardContent className="p-0">
-        {/* Thumbnail */}
-        {article.thumbnail_url && (
-          <div className="aspect-video overflow-hidden rounded-t-lg">
-            <img
-              src={article.thumbnail_url}
-              alt={article.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          </div>
-        )}
-        
-        <div className="p-6 space-y-4">
-          {/* Category */}
-          <Badge 
-            variant="secondary" 
-            className="bg-[hsl(var(--category-bg))] text-[hsl(var(--category-text))] hover:bg-[hsl(var(--category-bg))]"
-          >
-            {article.category}
-          </Badge>
+    <>
+      <Card 
+        className="group cursor-pointer bg-gradient-card border-border shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1"
+        onClick={handleClick}
+      >
+        <CardContent className="p-0">
+          {/* Thumbnail */}
+          {article.thumbnail_url && (
+            <div className="aspect-video overflow-hidden rounded-t-lg">
+              <img
+                src={article.thumbnail_url}
+                alt={article.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+          
+          <div className="p-6 space-y-4">
+            {/* Category */}
+            <Badge 
+              variant="secondary" 
+              className="bg-[hsl(var(--category-bg))] text-[hsl(var(--category-text))] hover:bg-[hsl(var(--category-bg))]"
+            >
+              {article.category}
+            </Badge>
 
-          {/* Title */}
-          <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-            {article.title}
-          </h3>
+            {/* Title */}
+            <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+              {article.title}
+            </h3>
 
-          {/* Summary */}
-          <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed">
-            {article.content_summary}
-          </p>
+            {/* Summary */}
+            <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed">
+              {article.content_summary}
+            </p>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              {/* Date */}
-              <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                <span>{formatDate(article.published_at)}</span>
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                {/* Date */}
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  <span>{formatDate(article.published_at)}</span>
+                </div>
+                
+                {/* Likes */}
+                <div className="flex items-center gap-1">
+                  <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+                  <span>{likesCount}</span>
+                </div>
               </div>
-              
-              {/* Likes */}
-              <div className="flex items-center gap-1">
-                <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
-                <span>{likesCount}</span>
+
+              {/* Source & Actions */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{article.source_name}</span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLike}
+                    disabled={isLoading}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'}`} />
+                  </Button>
+                  <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
               </div>
             </div>
-
-            {/* Source & Actions */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{article.source_name}</span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLike}
-                  disabled={isLoading}
-                  className="h-6 w-6 p-0"
-                >
-                  <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'}`} />
-                </Button>
-                <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        onSuccess={handleLoginSuccess}
+      />
+    </>
   );
 };

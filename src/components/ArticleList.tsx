@@ -6,6 +6,7 @@ import { ArticleFilters, CATEGORIES, SortOption } from "./ArticleFilters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
+import { LoginDialog } from "./LoginDialog";
 
 type Article = Tables<"articles">;
 
@@ -16,6 +17,22 @@ export const ArticleList = () => {
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [sortOption, setSortOption] = useState<SortOption>("latest");
   const [showLikedOnly, setShowLikedOnly] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  const handleLikedOnlyChange = async (checked: boolean) => {
+    if (checked) {
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) {
+        setShowLoginDialog(true);
+        return;
+      }
+    }
+    setShowLikedOnly(checked);
+  };
+
+  const handleLoginSuccess = () => {
+    setShowLikedOnly(true);
+  };
 
   const fetchArticles = async () => {
     try {
@@ -128,7 +145,7 @@ export const ArticleList = () => {
           onSortChange={setSortOption}
           totalCount={0}
           showLikedOnly={showLikedOnly}
-          onLikedOnlyChange={setShowLikedOnly}
+          onLikedOnlyChange={handleLikedOnlyChange}
         />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Alert variant="destructive">
@@ -149,7 +166,7 @@ export const ArticleList = () => {
         onSortChange={setSortOption}
         totalCount={articles.length}
         showLikedOnly={showLikedOnly}
-        onLikedOnlyChange={setShowLikedOnly}
+        onLikedOnlyChange={handleLikedOnlyChange}
       />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -181,6 +198,12 @@ export const ArticleList = () => {
           </div>
         )}
       </div>
+      
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        onSuccess={handleLoginSuccess}
+      />
     </div>
   );
 };
