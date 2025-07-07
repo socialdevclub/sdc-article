@@ -18,7 +18,7 @@ export const ArticleList = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [selectedCategories, setSelectedCategories] = useState(["전체"]);
   const [sortOption, setSortOption] = useState<SortOption>("latest");
   const [showLikedOnly, setShowLikedOnly] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -91,8 +91,8 @@ export const ArticleList = () => {
         .gte("likes.created_at", timeFilter.toISOString());
 
       // Category filter
-      if (selectedCategory !== "전체") {
-        baseQuery = baseQuery.eq("category", selectedCategory);
+      if (!selectedCategories.includes("전체") && selectedCategories.length > 0) {
+        baseQuery = baseQuery.in("category", selectedCategories);
       }
 
       // Liked only filter
@@ -156,8 +156,8 @@ export const ArticleList = () => {
       // 좋아요 수가 없는 아티클들도 포함 (해당 기간에 좋아요가 없는 경우)
       let allArticlesQuery = supabase.from("articles").select("*");
       
-      if (selectedCategory !== "전체") {
-        allArticlesQuery = allArticlesQuery.eq("category", selectedCategory);
+      if (!selectedCategories.includes("전체") && selectedCategories.length > 0) {
+        allArticlesQuery = allArticlesQuery.in("category", selectedCategories);
       }
 
       if (showLikedOnly) {
@@ -215,7 +215,7 @@ export const ArticleList = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedCategory, showLikedOnly, sortOption]);
+  }, [selectedCategories, showLikedOnly, sortOption]);
 
 
   const fetchArticles = useCallback(async (currentOffset: number = 0, isLoadMore: boolean = false) => {
@@ -236,8 +236,8 @@ export const ArticleList = () => {
       let query = supabase.from("articles").select("*");
 
       // Category filter
-      if (selectedCategory !== "전체") {
-        query = query.eq("category", selectedCategory);
+      if (!selectedCategories.includes("전체") && selectedCategories.length > 0) {
+        query = query.in("category", selectedCategories);
       }
 
       // Liked only filter
@@ -301,7 +301,7 @@ export const ArticleList = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [sortOption, selectedCategory, showLikedOnly, fetchPopularArticles]); 
+  }, [sortOption, selectedCategories, showLikedOnly, fetchPopularArticles]); 
    
   // Intersection Observer로 무한 스크롤 처리
   useEffect(() => {
@@ -315,15 +315,15 @@ export const ArticleList = () => {
   useEffect(() => {
     resetArticles();
     fetchArticles(0, false);
-  }, [selectedCategory, sortOption, showLikedOnly, fetchArticles, resetArticles]);
+  }, [selectedCategories, sortOption, showLikedOnly, fetchArticles, resetArticles]);
 
   if (error) {
     return (
       <div className="min-h-screen bg-background">
         <ArticleFilters
-          selectedCategory={selectedCategory}
+          selectedCategories={selectedCategories}
           sortOption={sortOption}
-          onCategoryChange={setSelectedCategory}
+          onCategoryChange={setSelectedCategories}
           onSortChange={setSortOption}
           totalCount={0}
           showLikedOnly={showLikedOnly}
@@ -341,15 +341,15 @@ export const ArticleList = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <ArticleFilters
-        selectedCategory={selectedCategory}
-        sortOption={sortOption}
-        onCategoryChange={setSelectedCategory}
-        onSortChange={setSortOption}
-        totalCount={articles.length}
-        showLikedOnly={showLikedOnly}
-        onLikedOnlyChange={handleLikedOnlyChange}
-      />
+              <ArticleFilters
+          selectedCategories={selectedCategories}
+          sortOption={sortOption}
+          onCategoryChange={setSelectedCategories}
+          onSortChange={setSortOption}
+          totalCount={articles.length}
+          showLikedOnly={showLikedOnly}
+          onLikedOnlyChange={handleLikedOnlyChange}
+        />
 
       <div className="max-w-screen-2xl mx-auto px-4 py-8">
         {loading ? (
