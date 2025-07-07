@@ -69,9 +69,9 @@ export const ArticleFilters = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="latest">최신순</SelectItem>
-              <SelectItem value="daily">일간 인기</SelectItem>
-              <SelectItem value="weekly">주간 인기</SelectItem>
-              <SelectItem value="monthly">월간 인기</SelectItem>
+              <SelectItem value="daily">일간 인기순</SelectItem>
+              <SelectItem value="weekly">주간 인기순</SelectItem>
+              <SelectItem value="monthly">월간 인기순</SelectItem>
             </SelectContent>
           </Select>
         </div>
