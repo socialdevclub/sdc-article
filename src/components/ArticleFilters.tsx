@@ -12,6 +12,7 @@ export const CATEGORIES = [
   "백엔드",
   "데이터엔지니어링",
   "DevOps",
+  "SRE",
   "AI",
   "SW엔지니어링",
   "개발팁",
