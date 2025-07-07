@@ -172,9 +172,9 @@ export const ArticleList = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {loading ? (
           // Loading skeleton
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-wrap gap-6 justify-center">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="space-y-4">
+              <div key={i} className="space-y-4 w-[300px]">
                 <Skeleton className="h-48 w-full rounded-lg" />
                 <div className="space-y-2 p-4">
                   <Skeleton className="h-4 w-20" />
@@ -191,7 +191,7 @@ export const ArticleList = () => {
             <div className="text-sm text-muted-foreground">다른 카테고리를 선택해보세요</div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-wrap gap-6 justify-center">
             {articles.map((article) => (
               <ArticleCard key={article.id} article={article} />
             ))}

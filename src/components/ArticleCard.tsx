@@ -106,7 +106,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   return (
     <>
       <Card 
-        className="group cursor-pointer bg-gradient-card border-border shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1"
+        className="group cursor-pointer bg-gradient-card border-border shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 w-[300px]"
         onClick={handleClick}
       >
         <CardContent className="p-0">
