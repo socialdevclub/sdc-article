@@ -140,7 +140,7 @@ export const ArticleFilters = ({
         )}
 
         {/* Liked Only Filter */}
-        <div className="flex items-center gap-6 mb-4">
+        {/* <div className="flex items-center gap-6 mb-4">
           <div className="flex items-center gap-2">
             <Heart className="w-4 h-4 text-red-500" />
             <span className="text-sm">좋아요한 글만</span>
@@ -149,7 +149,7 @@ export const ArticleFilters = ({
               onCheckedChange={onLikedOnlyChange}
             />
           </div>
-        </div>
+        </div> */}
 
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2">
