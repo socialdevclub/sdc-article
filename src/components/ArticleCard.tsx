@@ -22,10 +22,11 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
 
   const handleClick = () => {
     gtagEvent('click', {
-      category: 'article',
-      title: article.title,
-      url: article.source_url,
-      source_name: article.source_name,
+      event_type: 'click_article',
+      event_category: article.category,
+      event_title: article.title,
+      event_url: article.source_url,
+      event_source_name: article.source_name,
     })
     window.open(article.source_url, '_blank');
   };
