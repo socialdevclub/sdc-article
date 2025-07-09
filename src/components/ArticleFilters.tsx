@@ -99,7 +99,7 @@ export const ArticleFilters = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <SlidersHorizontal className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">아티클 모음</h2>
+            <h2 className="text-xl font-semibold">소티클</h2>
             {/* <Badge variant="secondary" className="text-xs">
               {totalCount}개
             </Badge> */}
