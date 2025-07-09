@@ -6,6 +6,7 @@ import { Calendar, ExternalLink, Heart } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { LoginDialog } from "./LoginDialog";
+import { gtagEvent } from "@/lib/utils";
 
 type Article = Tables<"articles">;
 
@@ -20,6 +21,12 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const handleClick = () => {
+    gtagEvent('click', {
+      category: 'article',
+      title: article.title,
+      url: article.source_url,
+      source_name: article.source_name,
+    })
     window.open(article.source_url, '_blank');
   };
 
@@ -31,77 +38,77 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
     });
   };
 
-  useEffect(() => {
-    fetchLikesData();
-  }, [article.id]);
+  // useEffect(() => {
+  //   fetchLikesData();
+  // }, [article.id]);
 
-  const fetchLikesData = async () => {
-    // Get likes count
-    const { count } = await supabase
-      .from("likes")
-      .select("*", { count: "exact", head: true })
-      .eq("article_id", article.id);
+  // const fetchLikesData = async () => {
+  //   // Get likes count
+  //   const { count } = await supabase
+  //     .from("likes")
+  //     .select("*", { count: "exact", head: true })
+  //     .eq("article_id", article.id);
     
-    setLikesCount(count || 0);
+  //   setLikesCount(count || 0);
 
-    // Check if current user liked this article
-    const user = await supabase.auth.getUser();
-    if (user.data.user) {
-      const { data } = await supabase
-        .from("likes")
-        .select("id")
-        .eq("article_id", article.id)
-        .eq("user_id", user.data.user.id)
-        .single();
+  //   // Check if current user liked this article
+  //   const user = await supabase.auth.getUser();
+  //   if (user.data.user) {
+  //     const { data } = await supabase
+  //       .from("likes")
+  //       .select("id")
+  //       .eq("article_id", article.id)
+  //       .eq("user_id", user.data.user.id)
+  //       .single();
       
-      setIsLiked(!!data);
-    }
-  };
+  //     setIsLiked(!!data);
+  //   }
+  // };
 
-  const handleLike = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // const handleLike = async (e: React.MouseEvent) => {
+  //   e.stopPropagation();
     
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) {
-      setShowLoginDialog(true);
-      return;
-    }
+  //   const user = await supabase.auth.getUser();
+  //   if (!user.data.user) {
+  //     setShowLoginDialog(true);
+  //     return;
+  //   }
 
-    setIsLoading(true);
+  //   setIsLoading(true);
     
-    try {
-      if (isLiked) {
-        // Unlike
-        await supabase
-          .from("likes")
-          .delete()
-          .eq("article_id", article.id)
-          .eq("user_id", user.data.user.id);
+  //   try {
+  //     if (isLiked) {
+  //       // Unlike
+  //       await supabase
+  //         .from("likes")
+  //         .delete()
+  //         .eq("article_id", article.id)
+  //         .eq("user_id", user.data.user.id);
         
-        setIsLiked(false);
-        setLikesCount(prev => prev - 1);
-      } else {
-        // Like
-        await supabase
-          .from("likes")
-          .insert({
-            article_id: article.id,
-            user_id: user.data.user.id
-          });
+  //       setIsLiked(false);
+  //       setLikesCount(prev => prev - 1);
+  //     } else {
+  //       // Like
+  //       await supabase
+  //         .from("likes")
+  //         .insert({
+  //           article_id: article.id,
+  //           user_id: user.data.user.id
+  //         });
         
-        setIsLiked(true);
-        setLikesCount(prev => prev + 1);
-      }
-    } catch (error) {
-      console.error("Error toggling like:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //       setIsLiked(true);
+  //       setLikesCount(prev => prev + 1);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error toggling like:", error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  const handleLoginSuccess = () => {
-    fetchLikesData();
-  };
+  // const handleLoginSuccess = () => {
+  //   fetchLikesData();
+  // };
 
   return (
     <>
@@ -184,7 +191,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
       <LoginDialog
         open={showLoginDialog}
         onOpenChange={setShowLoginDialog}
-        onSuccess={handleLoginSuccess}
+        // onSuccess={handleLoginSuccess}
       />
     </>
   );
