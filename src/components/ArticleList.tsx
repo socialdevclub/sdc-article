@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { ArticleCard } from "./ArticleCard";
@@ -14,11 +15,22 @@ type Article = Tables<"articles">;
 const ARTICLES_PER_PAGE = 20;
 
 export const ArticleList = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState(["전체"]);
+  
+  // URL에서 카테고리 파라미터 읽어오기
+  const getCategoriesFromURL = useCallback((): string[] => {
+    const categoriesParam = searchParams.get('categories');
+    if (!categoriesParam) return ["전체"];
+    
+    const categories = categoriesParam.split(',').filter(cat => CATEGORIES.includes(cat));
+    return categories.length > 0 ? categories : ["전체"];
+  }, [searchParams]);
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => getCategoriesFromURL());
   const [sortOption, setSortOption] = useState<SortOption>("latest");
   const [showLikedOnly, setShowLikedOnly] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -36,6 +48,26 @@ export const ArticleList = () => {
       rootMargin: "100px"
     }
   );
+
+  // 카테고리 변경 시 URL도 함께 업데이트
+  const handleCategoryChange = useCallback((newCategories: string[]) => {
+    setSelectedCategories(newCategories);
+    
+    // URL 쿼리스트링 업데이트
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (newCategories.includes("전체") || newCategories.length === 0) {
+      newSearchParams.delete('categories');
+    } else {
+      newSearchParams.set('categories', newCategories.join(','));
+    }
+    setSearchParams(newSearchParams);
+  }, [searchParams, setSearchParams]);
+
+  // URL 변경 감지하여 상태 동기화
+  useEffect(() => {
+    const categoriesFromURL = getCategoriesFromURL();
+    setSelectedCategories(categoriesFromURL);
+  }, [getCategoriesFromURL]);
 
   const handleLikedOnlyChange = async (checked: boolean) => {
     if (checked) {
@@ -323,7 +355,7 @@ export const ArticleList = () => {
         <ArticleFilters
           selectedCategories={selectedCategories}
           sortOption={sortOption}
-          onCategoryChange={setSelectedCategories}
+          onCategoryChange={handleCategoryChange}
           onSortChange={setSortOption}
           totalCount={0}
           showLikedOnly={showLikedOnly}
@@ -344,7 +376,7 @@ export const ArticleList = () => {
               <ArticleFilters
           selectedCategories={selectedCategories}
           sortOption={sortOption}
-          onCategoryChange={setSelectedCategories}
+          onCategoryChange={handleCategoryChange}
           onSortChange={setSortOption}
           totalCount={articles.length}
           showLikedOnly={showLikedOnly}
