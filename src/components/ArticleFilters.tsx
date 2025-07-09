@@ -98,7 +98,7 @@ export const ArticleFilters = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <SlidersHorizontal className="w-5 h-5 text-primary" />
+            <img src="https://article.socialdev.club/favicon.png" alt="소티클" className="w-5 h-5" />
             <h2 className="text-xl font-semibold">소티클</h2>
             {/* <Badge variant="secondary" className="text-xs">
               {totalCount}개
@@ -106,7 +106,7 @@ export const ArticleFilters = ({
           </div>
 
           {/* Sort Options */}
-          <Select value={sortOption} onValueChange={(value) => onSortChange(value as SortOption)}>
+          {/* <Select value={sortOption} onValueChange={(value) => onSortChange(value as SortOption)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -116,7 +116,7 @@ export const ArticleFilters = ({
               <SelectItem value="weekly">주간 인기순</SelectItem>
               <SelectItem value="monthly">월간 인기순</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
         </div>
 
         {/* Selected Categories Display */}
