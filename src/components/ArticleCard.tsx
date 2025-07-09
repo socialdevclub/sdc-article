@@ -109,7 +109,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
         className="group cursor-pointer bg-gradient-card border-border shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 w-full"
         onClick={handleClick}
       >
-        <CardContent className="p-0">
+        <CardContent className="p-0" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* Thumbnail */}
           {article.thumbnail_url && (
             <div className="aspect-video overflow-hidden rounded-t-lg">
@@ -124,24 +124,26 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
             </div>
           )}
           
-          <div className="p-6 space-y-4">
-            {/* Category */}
-            <Badge 
-              variant="secondary" 
-              className="bg-[hsl(var(--category-bg))] text-[hsl(var(--category-text))] hover:bg-[hsl(var(--category-bg))]"
-            >
-              {article.category}
-            </Badge>
+          <div className="p-6 space-y-4" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              {/* Category */}
+              <Badge 
+                variant="secondary" 
+                className="bg-[hsl(var(--category-bg))] text-[hsl(var(--category-text))] hover:bg-[hsl(var(--category-bg))]"
+              >
+                {article.category}
+              </Badge>
 
-            {/* Title */}
-            <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-              {article.title}
-            </h3>
+              {/* Title */}
+              <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+                {article.title}
+              </h3>
 
-            {/* Summary */}
-            <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed">
-              {article.content_summary}
-            </p>
+              {/* Summary */}
+              <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed">
+                {article.content_summary}
+              </p>
+            </div>
 
             {/* Footer */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
@@ -153,17 +155,17 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
                 </div>
                 
                 {/* Likes */}
-                <div className="flex items-center gap-1">
+                {/* <div className="flex items-center gap-1">
                   <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
                   <span>{likesCount}</span>
-                </div>
+                </div> */}
               </div>
 
               {/* Source & Actions */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{article.source_name}</span>
                 <div className="flex items-center gap-1">
-                  <Button
+                  {/* <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleLike}
@@ -171,8 +173,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
                     className="h-6 w-6 p-0"
                   >
                     <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'}`} />
-                  </Button>
-                  <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </Button> */}
                 </div>
               </div>
             </div>
