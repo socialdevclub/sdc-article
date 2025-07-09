@@ -7,7 +7,7 @@ import { SlidersHorizontal, Heart, X } from "lucide-react";
 export const CATEGORIES = [
   "전체",
   "생산성",
-  "취업/이직", 
+  "커리어", 
   "프론트엔드",
   "백엔드",
   "데이터엔지니어링",
