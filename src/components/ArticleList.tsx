@@ -354,9 +354,9 @@ export const ArticleList = () => {
       <div className="max-w-screen-2xl mx-auto px-4 py-8">
         {loading ? (
           // Loading skeleton
-          <div className="flex flex-wrap gap-6 justify-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="space-y-4 w-[300px]">
+              <div key={i} className="space-y-4 w-full">
                 <Skeleton className="h-48 w-full rounded-lg" />
                 <div className="space-y-2 p-4">
                   <Skeleton className="h-4 w-20" />
@@ -374,7 +374,7 @@ export const ArticleList = () => {
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap gap-6 justify-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {articles.map((article) => (
                 <ArticleCard key={article.id} article={article} />
               ))}
