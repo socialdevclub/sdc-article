@@ -21,8 +21,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const handleClick = () => {
-    gtagEvent('click', {
-      event_type: 'click_article',
+    gtagEvent('click.article', {
       event_category: article.category,
       event_title: article.title,
       event_url: article.source_url,
