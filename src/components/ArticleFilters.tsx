@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoginDialog } from "./LoginDialog";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import { useScrollHideHeader } from "@/hooks/useScrollHideHeader";
 
 export const CATEGORIES = [
   "전체",
@@ -50,6 +51,7 @@ export const ArticleFilters = ({
 }: ArticleFiltersProps) => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const isHeaderVisible = useScrollHideHeader(100);
 
   useEffect(() => {
     // Get initial user
@@ -136,7 +138,9 @@ export const ArticleFilters = ({
   };
 
   return (
-    <div className="bg-card border-b border-border md:sticky md:top-0 z-10 backdrop-blur-sm bg-card/90">
+    <div className={`bg-card border-b border-border sticky top-0 z-10 backdrop-blur-sm bg-card/90 transition-transform duration-300 ${
+      isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+    }`}>
       <div className="max-w-screen-2xl mx-auto px-4 py-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
