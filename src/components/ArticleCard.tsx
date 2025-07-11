@@ -6,7 +6,7 @@ import { Calendar, ExternalLink, Heart } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { LoginDialog } from "./LoginDialog";
-import { gtagEvent } from "@/lib/utils";
+import { gtagEvent, htmlToPlainText } from "@/lib/utils";
 
 type Article = Tables<"articles">;
 
@@ -14,7 +14,13 @@ interface ArticleCardProps {
   article: Article;
 }
 
-export const SOURCE_MAP: Record<string, { name: string, favicon: string }> = {
+type ArticleSource = {
+  name: string;
+  favicon?: string;
+  fallbackThumbnail?: string;
+}
+
+export const SOURCE_MAP: Record<string, ArticleSource> = {
   "toss.tech": {
     name: "토스",
     favicon: "https://static.toss.im/tds/favicon/favicon-16x16.png"
@@ -46,10 +52,14 @@ export const SOURCE_MAP: Record<string, { name: string, favicon: string }> = {
   "tech.kakao.com": {
     name: "카카오",
     favicon: "https://tech.kakao.com/favicon.ico"
+  },
+  "d2.naver.com": {
+    name: "네이버 D2",
+    fallbackThumbnail: "https://d2.naver.com/static/img/app/d2_logo_renewal.png"
   }
 }
 
-export const getSourceFromUrl = (url: string): { name: string, favicon?: string } => {
+export const getSourceFromUrl = (url: string): ArticleSource => {
   const hostname = new URL(url).hostname;
   const subDomainName = hostname.split(".")[0];
   if (SOURCE_MAP[hostname]) {
@@ -78,6 +88,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   const source = getSourceFromUrl(article.source_url)
   const sourceName = source?.name;
   const sourceFavicon = source?.favicon;
+  const sourceFallbackThumbnail = source?.fallbackThumbnail;
 
   const handleClick = () => {
     gtagEvent('click_article', {
@@ -176,7 +187,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
       >
         <CardContent className="p-0" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* Thumbnail */}
-          {article.thumbnail_url && (
+          {article.thumbnail_url ? (
             <div className="aspect-video overflow-hidden rounded-t-lg cursor-pointer" onClick={handleClick}>
               <img
                 src={article.thumbnail_url}
@@ -186,6 +197,10 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
                   e.currentTarget.style.display = 'none';
                 }}
               />
+            </div>
+          ) : (
+            <div className="aspect-video overflow-hidden rounded-t-lg cursor-pointer" onClick={handleClick}>
+              <img src={sourceFallbackThumbnail} alt={sourceName} className="w-full h-full object-none group-hover:scale-105 transition-transform duration-300" />
             </div>
           )}
           
@@ -207,7 +222,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
 
                 {/* Summary */}
                 <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed cursor-pointer" onClick={handleClick}>
-                  {article.content_summary}
+                  {htmlToPlainText(article.content_summary)}
                 </p>
               </div>
 
@@ -220,7 +235,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
 
             {/* Footer */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
-              {/* Source & Actions */}
+              {/* ArticleSource & Actions */}
               <div className="flex items-center gap-2">
                 {sourceFavicon && <img src={sourceFavicon} alt={sourceName} className="w-4 h-4" />}
                 <span className="text-xs text-muted-foreground">{sourceName || article.source_url}</span>
