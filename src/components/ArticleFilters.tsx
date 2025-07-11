@@ -131,7 +131,7 @@ export const ArticleFilters = ({
             <h2 className="text-xl font-semibold">소티클</h2>
             {/* Sort Options */}
             <Select value={sortOption} onValueChange={(value) => onSortChange(value as SortOption)}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -149,7 +149,6 @@ export const ArticleFilters = ({
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
                   <Heart className="w-4 h-4 text-red-500" />
-                  <span className="text-sm">좋아요한 글만</span>
                   <Switch
                     checked={showLikedOnly}
                     onCheckedChange={handleLikedOnlyChange}
