@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Calendar, ExternalLink, Heart } from "lucide-react";
+import { Calendar, Heart } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
-import { supabase } from "@/integrations/supabase/client";
 import { LoginDialog } from "./LoginDialog";
 import { gtagEvent, htmlToPlainText } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useArticleLikes } from "@/hooks/useArticleLikes";
 
 type Article = Tables<"articles">;
 
@@ -89,55 +89,71 @@ export const SOURCE_MAP: Record<string, ArticleSource> = {
 }
 
 export const getSourceFromUrl = (url: string): ArticleSource => {
-  const hostname = new URL(url).hostname;
-  const subDomainName = hostname.split(".")[0];
-  const author = url.split("/")[3];
-  if (SOURCE_MAP[hostname]) {
-    return SOURCE_MAP[hostname];
-  } else if (SOURCE_MAP[`${hostname}/${author}`]) {
-    return SOURCE_MAP[`${hostname}/${author}`];
-  }
-  switch (true) {
-    case hostname.includes("tistory.com"): {
-      return {
-        name: `tistory.com > ${subDomainName}`
+  try {
+    const hostname = new URL(url).hostname;
+    const subDomainName = hostname.split(".")[0];
+    const author = url.split("/")[3];
+    
+    if (SOURCE_MAP[hostname]) {
+      return SOURCE_MAP[hostname];
+    } else if (SOURCE_MAP[`${hostname}/${author}`]) {
+      return SOURCE_MAP[`${hostname}/${author}`];
+    }
+    
+    switch (true) {
+      case hostname.includes("tistory.com"): {
+        return {
+          name: `tistory.com > ${subDomainName}`
+        }
+      }
+      case hostname.includes("github.io"): {
+        return {
+          name: `github.io > ${subDomainName}`
+        }
+      }
+      case hostname.includes("medium.com"): {
+        return {
+          name: `medium.com > ${author}`
+        }
+      }
+      case hostname.includes("dev.to"): {
+        return {
+          name: `dev.to > ${author}`
+        }
+      }
+      case hostname.includes("velog.io"): {
+        return {
+          name: `velog.io > ${author}`
+        }
+      }
+      default: {
+        return {
+          name: hostname
+        }
       }
     }
-    case hostname.includes("github.io"): {
-      return {
-        name: `github.io > ${subDomainName}`
-      }
-    }
-    case hostname.includes("medium.com"): {
-      return {
-        name: `medium.com > ${author}`
-      }
-    }
-    case hostname.includes("dev.to"): {
-      return {
-        name: `dev.to > ${author}`
-      }
-    }
-    case hostname.includes("velog.io"): {
-      return {
-        name: `velog.io > ${author}`
-      }
+  } catch (error) {
+    console.error("Error parsing URL:", error);
+    return {
+      name: url
     }
   }
 }
 
-export const ArticleCard = ({ article }: ArticleCardProps) => {
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+export const ArticleCard = memo(({ article }: ArticleCardProps) => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  
+  const { isAuthenticated } = useAuth();
+  const { likesCount, isLiked, toggleLike, isToggling } = useArticleLikes(article.id);
 
-  const source = getSourceFromUrl(article.source_url)
+  const source = useMemo(() => getSourceFromUrl(article.source_url), [article.source_url]);
   const sourceName = source?.name;
   const sourceFavicon = source?.favicon;
   const sourceFallbackThumbnail = source?.fallbackThumbnail;
 
-  const handleClick = () => {
+  const thumbnailUrl = article.thumbnail_url || sourceFallbackThumbnail || sourceFavicon;
+
+  const handleClick = useCallback(() => {
     gtagEvent('click_article', {
       event_category: article.category,
       event_title: article.title,
@@ -145,87 +161,32 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
       event_source_name: sourceName,
     })
     window.open(article.source_url, '_blank');
-  };
+  }, [article.category, article.title, article.source_url, sourceName]);
 
-  const formatDate = (dateString: string) => {
+  const formattedDate = useMemo(() => {
+    const dateString = article.published_at || article.created_at;
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
-  };
+  }, [article.published_at, article.created_at]);
 
-  const fetchLikesData = useCallback(async () => {
-    // Get likes count
-    const { count } = await supabase
-      .from("likes")
-      .select("*", { count: "exact", head: true })
-      .eq("article_id", article.id);
-    
-    setLikesCount(count || 0);
-
-    // Check if current user liked this article
-    const user = await supabase.auth.getUser();
-    if (user.data.user) {
-      const { data } = await supabase
-        .from("likes")
-        .select("id")
-        .eq("article_id", article.id)
-        .eq("user_id", user.data.user.id)
-        .single();
-      
-      setIsLiked(!!data);
-    }
-  }, [article.id]);
-
-  useEffect(() => {
-    fetchLikesData();
-  }, [fetchLikesData]);
-
-  const handleLike = async (e: React.MouseEvent) => {
+  const handleLike = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) {
+    if (!isAuthenticated) {
       setShowLoginDialog(true);
       return;
     }
 
-    setIsLoading(true);
-    
-    try {
-      if (isLiked) {
-        // Unlike
-        await supabase
-          .from("likes")
-          .delete()
-          .eq("article_id", article.id)
-          .eq("user_id", user.data.user.id);
-        
-        setIsLiked(false);
-        setLikesCount(prev => prev - 1);
-      } else {
-        // Like
-        await supabase
-          .from("likes")
-          .insert({
-            article_id: article.id,
-            user_id: user.data.user.id
-          });
-        
-        setIsLiked(true);
-        setLikesCount(prev => prev + 1);
-      }
-    } catch (error) {
-      console.error("Error toggling like:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    toggleLike();
+  }, [isAuthenticated, toggleLike]);
 
-  const handleLoginSuccess = () => {
-    fetchLikesData();
-  };
+  const handleLoginSuccess = useCallback(() => {
+    // 로그인 성공 시 좋아요 데이터는 자동으로 refetch됩니다
+    setShowLoginDialog(false);
+  }, []);
 
   return (
     <>
@@ -276,7 +237,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               {/* Date */}
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar className="w-3 h-3" />
-                <span>{formatDate(article.published_at || article.created_at)}</span>
+                <span>{formattedDate}</span>
               </div>
             </div>
 
@@ -307,4 +268,4 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
       />
     </>
   );
-};
+});
