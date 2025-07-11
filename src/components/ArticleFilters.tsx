@@ -197,26 +197,6 @@ export const ArticleFilters = ({
           </Select> */}
         </div>
 
-        {/* Selected Categories Display */}
-        {selectedCategories.length > 0 && !selectedCategories.includes("전체") && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="text-sm text-muted-foreground mr-2">선택된 카테고리:</span>
-            {selectedCategories.map((category) => (
-              <Badge 
-                key={category} 
-                variant="default" 
-                className="flex items-center gap-1"
-              >
-                {category}
-                <X 
-                  className="w-3 h-3 cursor-pointer hover:bg-primary-foreground/20 rounded" 
-                  onClick={() => removeCategoryFilter(category)}
-                />
-              </Badge>
-            ))}
-          </div>
-        )}
-
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((category) => {
