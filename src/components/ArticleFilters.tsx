@@ -28,7 +28,7 @@ export const CATEGORIES = [
   "HR"
 ];
 
-export type SortOption = "latest" | "daily" | "weekly" | "monthly";
+export type SortOption = "latest" | "daily" | "weekly" | "monthly" | "popular:all";
 
 interface ArticleFiltersProps {
   selectedCategories: string[];
@@ -89,15 +89,6 @@ export const ArticleFilters = ({
     onLikedOnlyChange(checked);
   };
 
-  const getSortLabel = (option: SortOption) => {
-    switch (option) {
-      case "latest": return "최신순";
-      case "daily": return "일간 인기";
-      case "weekly": return "주간 인기";
-      case "monthly": return "월간 인기";
-    }
-  };
-
   const handleCategoryClick = (category: string) => {
     if (category === "전체") {
       // "전체" 선택 시 모든 다른 카테고리 해제
@@ -128,15 +119,6 @@ export const ArticleFilters = ({
     }
   };
 
-  const removeCategoryFilter = (categoryToRemove: string) => {
-    const newCategories = selectedCategories.filter(cat => cat !== categoryToRemove);
-    if (newCategories.length === 0) {
-      onCategoryChange(["전체"]);
-    } else {
-      onCategoryChange(newCategories);
-    }
-  };
-
   return (
     <div className={`bg-card border-b border-border sticky top-0 z-10 backdrop-blur-sm bg-card/90 transition-transform duration-300 ${
       isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
@@ -154,9 +136,9 @@ export const ArticleFilters = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="latest">최신순</SelectItem>
-                <SelectItem value="daily">일간 인기순</SelectItem>
-                <SelectItem value="weekly">주간 인기순</SelectItem>
-                <SelectItem value="monthly">월간 인기순</SelectItem>
+                <SelectItem value="popular:all">인기순</SelectItem>
+                {/* <SelectItem value="weekly">주간 인기순</SelectItem>
+                <SelectItem value="monthly">월간 인기순</SelectItem> */}
               </SelectContent>
             </Select>
           </div>

@@ -103,8 +103,8 @@ export const ArticleList = () => {
         case "monthly":
           timeFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           break;
-        default:
-          timeFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        case "popular:all":
+          timeFilter = new Date(0);
       }
 
       // 아티클과 해당 기간의 좋아요 수를 함께 조회
@@ -151,7 +151,7 @@ export const ArticleList = () => {
       }
 
       // 모든 아티클과 해당 좋아요 수를 가져와서 클라이언트에서 정렬
-      const { data: articlesWithLikes, error } = await baseQuery;
+      const { data: articlesWithLikes, error } = await baseQuery
       
       if (error) throw error;
 
@@ -180,7 +180,7 @@ export const ArticleList = () => {
       });
 
       // 좋아요 수가 없는 아티클들도 포함 (해당 기간에 좋아요가 없는 경우)
-      let allArticlesQuery = supabase.from("articles").select("*");
+      let allArticlesQuery = supabase.from("articles").select("*").order("published_at", { ascending: false });
       
       if (!selectedCategories.includes("전체") && selectedCategories.length > 0) {
         allArticlesQuery = allArticlesQuery.in("category", selectedCategories);
@@ -254,7 +254,7 @@ export const ArticleList = () => {
       setError(null);
 
       // 인기순 정렬의 경우 특별 처리
-      if (sortOption === "daily" || sortOption === "weekly" || sortOption === "monthly") {
+      if (sortOption === "daily" || sortOption === "weekly" || sortOption === "monthly" || sortOption === "popular:all") {
         await fetchPopularArticles(currentOffset, isLoadMore);
         return;
       }
