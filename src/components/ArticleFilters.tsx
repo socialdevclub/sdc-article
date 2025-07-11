@@ -152,9 +152,14 @@ export const ArticleFilters = ({
           <div className="flex items-center gap-2">
             {user ? (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  {user.email}
-                </span>
+                <div className="flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-red-500" />
+                  <span className="text-sm">좋아요한 글만</span>
+                  <Switch
+                    checked={showLikedOnly}
+                    onCheckedChange={handleLikedOnlyChange}
+                  />
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -211,18 +216,6 @@ export const ArticleFilters = ({
             ))}
           </div>
         )}
-
-        {/* Liked Only Filter */}
-        <div className="flex items-center gap-6 mb-4">
-          <div className="flex items-center gap-2">
-            <Heart className="w-4 h-4 text-red-500" />
-            <span className="text-sm">좋아요한 글만</span>
-            <Switch
-              checked={showLikedOnly}
-              onCheckedChange={handleLikedOnlyChange}
-            />
-          </div>
-        </div>
 
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2">
