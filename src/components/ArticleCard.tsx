@@ -14,18 +14,77 @@ interface ArticleCardProps {
   article: Article;
 }
 
+export const SOURCE_MAP: Record<string, { name: string, favicon: string }> = {
+  "toss.tech": {
+    name: "토스",
+    favicon: "https://static.toss.im/tds/favicon/favicon-16x16.png"
+  },
+  "tech.kakaopay.com": {
+    name: "카카오페이",
+    favicon: "https://tech.kakaopay.com/favicon.ico"
+  },
+  "engineering.ab180.co": {
+    name: "AB180",
+    favicon: "https://oopy.lazyrockets.com/api/rest/cdn/image/7bbc75b5-1cdf-4b59-aec4-af3e335b3aad.png?d=16"
+  },
+  "thefarmersfront.github.io": {
+    name: "컬리",
+    favicon: "https://www.kurly.com/favicon.ico"
+  },
+  "tech.devsisters.com": {
+    name: "데브시스터스",
+    favicon: "https://tech.devsisters.com/favicon-32x32.png"
+  },
+  "tech.socarcorp.kr": {
+    name: "쏘카",
+    favicon: "https://tech.socarcorp.kr/assets/icon/favicon.ico"
+  },
+  "hyperconnect.github.io": {
+    name: "하이퍼커넥트",
+    favicon: "https://hyperconnect.github.io/assets/favicon.svg"
+  },
+  "tech.kakao.com": {
+    name: "카카오",
+    favicon: "https://tech.kakao.com/favicon.ico"
+  }
+}
+
+export const getSourceFromUrl = (url: string): { name: string, favicon?: string } => {
+  const hostname = new URL(url).hostname;
+  const subDomainName = hostname.split(".")[0];
+  if (SOURCE_MAP[hostname]) {
+    return SOURCE_MAP[hostname];
+  }
+  switch (true) {
+    case hostname.includes("tistory.com"): {
+      return {
+        name: `tistory.com > ${subDomainName}`
+      }
+    }
+    case hostname.includes("github.io"): {
+      return {
+        name: `github.io > ${subDomainName}`
+      }
+    }
+  }
+}
+
 export const ArticleCard = ({ article }: ArticleCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
+  const source = getSourceFromUrl(article.source_url)
+  const sourceName = source?.name;
+  const sourceFavicon = source?.favicon;
+
   const handleClick = () => {
     gtagEvent('click_article', {
       event_category: article.category,
       event_title: article.title,
       event_url: article.source_url,
-      event_source_name: article.source_name,
+      event_source_name: sourceName,
     })
     window.open(article.source_url, '_blank');
   };
@@ -163,7 +222,8 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
             <div className="flex items-center justify-between pt-2 border-t border-border">
               {/* Source & Actions */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{article.source_name}</span>
+                {sourceFavicon && <img src={sourceFavicon} alt={sourceName} className="w-4 h-4" />}
+                <span className="text-xs text-muted-foreground">{sourceName || article.source_url}</span>
               </div>
 
               <div className="flex items-center gap-4 text-xs text-muted-foreground cursor-pointer" onClick={handleLike}>
@@ -181,7 +241,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
       <LoginDialog
         open={showLoginDialog}
         onOpenChange={setShowLoginDialog}
-        // onSuccess={handleLoginSuccess}
+        onSuccess={handleLoginSuccess}
       />
     </>
   );

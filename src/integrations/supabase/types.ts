@@ -16,7 +16,6 @@ export type Database = {
           created_at: string
           id: string
           published_at: string
-          source_name: string
           source_url: string
           thumbnail_url: string | null
           title: string
