@@ -55,7 +55,12 @@ export const SOURCE_MAP: Record<string, ArticleSource> = {
   },
   "d2.naver.com": {
     name: "네이버 D2",
+    favicon: "https://d2.naver.com/favicon.ico",
     fallbackThumbnail: "https://d2.naver.com/static/img/app/d2_logo_renewal.png"
+  },
+  "techblog.lycorp.co.jp": {
+    name: "라인",
+    favicon: "https://techblog.lycorp.co.jp/favicon.ico"
   }
 }
 
@@ -229,7 +234,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               {/* Date */}
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar className="w-3 h-3" />
-                <span>{formatDate(article.published_at)}</span>
+                <span>{formatDate(article.published_at || article.created_at)}</span>
               </div>
             </div>
 
