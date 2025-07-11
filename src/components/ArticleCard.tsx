@@ -246,10 +246,10 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
                 <span className="text-xs text-muted-foreground">{sourceName || article.source_url}</span>
               </div>
 
-              <div className="flex items-center gap-4 text-xs text-muted-foreground cursor-pointer" onClick={handleLike}>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors" onClick={handleLike}>
                 {/* Likes */}
                 <div className="flex items-center gap-1">
-                  <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+                  <Heart className={`w-3 h-3 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'}`} />
                   <span>{likesCount}</span>
                 </div>
               </div>
