@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,88 +38,87 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
     });
   };
 
-  // useEffect(() => {
-  //   fetchLikesData();
-  // }, [article.id]);
-
-  // const fetchLikesData = async () => {
-  //   // Get likes count
-  //   const { count } = await supabase
-  //     .from("likes")
-  //     .select("*", { count: "exact", head: true })
-  //     .eq("article_id", article.id);
+  const fetchLikesData = useCallback(async () => {
+    // Get likes count
+    const { count } = await supabase
+      .from("likes")
+      .select("*", { count: "exact", head: true })
+      .eq("article_id", article.id);
     
-  //   setLikesCount(count || 0);
+    setLikesCount(count || 0);
 
-  //   // Check if current user liked this article
-  //   const user = await supabase.auth.getUser();
-  //   if (user.data.user) {
-  //     const { data } = await supabase
-  //       .from("likes")
-  //       .select("id")
-  //       .eq("article_id", article.id)
-  //       .eq("user_id", user.data.user.id)
-  //       .single();
+    // Check if current user liked this article
+    const user = await supabase.auth.getUser();
+    if (user.data.user) {
+      const { data } = await supabase
+        .from("likes")
+        .select("id")
+        .eq("article_id", article.id)
+        .eq("user_id", user.data.user.id)
+        .single();
       
-  //     setIsLiked(!!data);
-  //   }
-  // };
+      setIsLiked(!!data);
+    }
+  }, [article.id]);
 
-  // const handleLike = async (e: React.MouseEvent) => {
-  //   e.stopPropagation();
+  useEffect(() => {
+    fetchLikesData();
+  }, [fetchLikesData]);
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     
-  //   const user = await supabase.auth.getUser();
-  //   if (!user.data.user) {
-  //     setShowLoginDialog(true);
-  //     return;
-  //   }
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) {
+      setShowLoginDialog(true);
+      return;
+    }
 
-  //   setIsLoading(true);
+    setIsLoading(true);
     
-  //   try {
-  //     if (isLiked) {
-  //       // Unlike
-  //       await supabase
-  //         .from("likes")
-  //         .delete()
-  //         .eq("article_id", article.id)
-  //         .eq("user_id", user.data.user.id);
+    try {
+      if (isLiked) {
+        // Unlike
+        await supabase
+          .from("likes")
+          .delete()
+          .eq("article_id", article.id)
+          .eq("user_id", user.data.user.id);
         
-  //       setIsLiked(false);
-  //       setLikesCount(prev => prev - 1);
-  //     } else {
-  //       // Like
-  //       await supabase
-  //         .from("likes")
-  //         .insert({
-  //           article_id: article.id,
-  //           user_id: user.data.user.id
-  //         });
+        setIsLiked(false);
+        setLikesCount(prev => prev - 1);
+      } else {
+        // Like
+        await supabase
+          .from("likes")
+          .insert({
+            article_id: article.id,
+            user_id: user.data.user.id
+          });
         
-  //       setIsLiked(true);
-  //       setLikesCount(prev => prev + 1);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error toggling like:", error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+        setIsLiked(true);
+        setLikesCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // const handleLoginSuccess = () => {
-  //   fetchLikesData();
-  // };
+  const handleLoginSuccess = () => {
+    fetchLikesData();
+  };
 
   return (
     <>
       <Card 
-        className="group cursor-pointer bg-gradient-card border-border shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 w-full"
-        onClick={handleClick}
+        className="group bg-gradient-card border-border shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 w-full"
       >
         <CardContent className="p-0" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* Thumbnail */}
           {article.thumbnail_url && (
-            <div className="aspect-video overflow-hidden rounded-t-lg">
+            <div className="aspect-video overflow-hidden rounded-t-lg cursor-pointer" onClick={handleClick}>
               <img
                 src={article.thumbnail_url}
                 alt={article.title}
@@ -132,55 +131,46 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
           )}
           
           <div className="p-6 space-y-4" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              {/* Category */}
-              <Badge 
-                variant="secondary" 
-                className="bg-[hsl(var(--category-bg))] text-[hsl(var(--category-text))] hover:bg-[hsl(var(--category-bg))]"
-              >
-                {article.category}
-              </Badge>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between', flex: 1 }}>
+              <div>
+                {/* Category */}
+                <Badge 
+                  variant="secondary" 
+                  className="bg-[hsl(var(--category-bg))] text-[hsl(var(--category-text))] hover:bg-[hsl(var(--category-bg))]"
+                >
+                  {article.category}
+                </Badge>
 
-              {/* Title */}
-              <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-                {article.title}
-              </h3>
+                {/* Title */}
+                <h3 className="text-lg font-semibold line-clamp-2 transition-colors cursor-pointer" onClick={handleClick}>
+                  {article.title}
+                </h3>
 
-              {/* Summary */}
-              <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed">
-                {article.content_summary}
-              </p>
+                {/* Summary */}
+                <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed cursor-pointer" onClick={handleClick}>
+                  {article.content_summary}
+                </p>
+              </div>
+
+              {/* Date */}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="w-3 h-3" />
+                <span>{formatDate(article.published_at)}</span>
+              </div>
             </div>
 
             {/* Footer */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                {/* Date */}
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  <span>{formatDate(article.published_at)}</span>
-                </div>
-                
-                {/* Likes */}
-                {/* <div className="flex items-center gap-1">
-                  <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
-                  <span>{likesCount}</span>
-                </div> */}
+              {/* Source & Actions */}
+              <div className="flex items-center gap-2 cursor-pointer">
+                <span className="text-xs text-muted-foreground">{article.source_name}</span>
               </div>
 
-              {/* Source & Actions */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{article.source_name}</span>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground cursor-pointer" onClick={handleLike}>
+                {/* Likes */}
                 <div className="flex items-center gap-1">
-                  {/* <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLike}
-                    disabled={isLoading}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'}`} />
-                  </Button> */}
+                  <Heart className={`w-3 h-3 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+                  <span>{likesCount}</span>
                 </div>
               </div>
             </div>
