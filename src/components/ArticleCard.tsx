@@ -162,7 +162,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
             {/* Footer */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
               {/* Source & Actions */}
-              <div className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{article.source_name}</span>
               </div>
 
