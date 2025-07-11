@@ -147,9 +147,18 @@ export const ArticleFilters = ({
           <div className="flex items-center gap-3">
             <img src="https://article.socialdev.club/favicon.png" alt="소티클" className="w-5 h-5" />
             <h2 className="text-xl font-semibold">소티클</h2>
-            {/* <Badge variant="secondary" className="text-xs">
-              {totalCount}개
-            </Badge> */}
+            {/* Sort Options */}
+            <Select value={sortOption} onValueChange={(value) => onSortChange(value as SortOption)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="latest">최신순</SelectItem>
+                <SelectItem value="daily">일간 인기순</SelectItem>
+                <SelectItem value="weekly">주간 인기순</SelectItem>
+                <SelectItem value="monthly">월간 인기순</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Login/Logout Button */}
@@ -186,19 +195,6 @@ export const ArticleFilters = ({
               </Button>
             )}
           </div>
-
-          {/* Sort Options */}
-          {/* <Select value={sortOption} onValueChange={(value) => onSortChange(value as SortOption)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="latest">최신순</SelectItem>
-              <SelectItem value="daily">일간 인기순</SelectItem>
-              <SelectItem value="weekly">주간 인기순</SelectItem>
-              <SelectItem value="monthly">월간 인기순</SelectItem>
-            </SelectContent>
-          </Select> */}
         </div>
 
         {/* Category Filters */}
