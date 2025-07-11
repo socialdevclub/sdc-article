@@ -7,7 +7,6 @@ import { ArticleFilters, CATEGORIES, SortOption } from "./ArticleFilters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Loader2 } from "lucide-react";
-import { LoginDialog } from "./LoginDialog";
 import { useIntersectionObserver } from "react-simplikit";
 
 type Article = Tables<"articles">;
@@ -33,7 +32,6 @@ export const ArticleList = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => getCategoriesFromURL());
   const [sortOption, setSortOption] = useState<SortOption>("latest");
   const [showLikedOnly, setShowLikedOnly] = useState(false);
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isIntersecting, setIsIntersecting] = useState(false);
@@ -73,15 +71,11 @@ export const ArticleList = () => {
     if (checked) {
       const user = await supabase.auth.getUser();
       if (!user.data.user) {
-        setShowLoginDialog(true);
+        // 로그인이 필요한 경우 ArticleFilters에서 처리하도록 함
         return;
       }
     }
     setShowLikedOnly(checked);
-  };
-
-  const handleLoginSuccess = () => {
-    setShowLikedOnly(true);
   };
 
   const resetArticles = useCallback(() => {
@@ -373,15 +367,15 @@ export const ArticleList = () => {
 
   return (
     <div className="min-h-screen bg-background">
-              <ArticleFilters
-          selectedCategories={selectedCategories}
-          sortOption={sortOption}
-          onCategoryChange={handleCategoryChange}
-          onSortChange={setSortOption}
-          totalCount={articles.length}
-          showLikedOnly={showLikedOnly}
-          onLikedOnlyChange={handleLikedOnlyChange}
-        />
+      <ArticleFilters
+        selectedCategories={selectedCategories}
+        sortOption={sortOption}
+        onCategoryChange={handleCategoryChange}
+        onSortChange={setSortOption}
+        totalCount={articles.length}
+        showLikedOnly={showLikedOnly}
+        onLikedOnlyChange={handleLikedOnlyChange}
+      />
 
       <div className="max-w-screen-2xl mx-auto px-4 py-8">
         {loading ? (
@@ -436,12 +430,6 @@ export const ArticleList = () => {
           </>
         )}
       </div>
-      
-      <LoginDialog
-        open={showLoginDialog}
-        onOpenChange={setShowLoginDialog}
-        onSuccess={handleLoginSuccess}
-      />
     </div>
   );
 };

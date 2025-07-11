@@ -2,7 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { SlidersHorizontal, Heart, X } from "lucide-react";
+import { SlidersHorizontal, Heart, X, LogIn, LogOut, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { LoginDialog } from "./LoginDialog";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export const CATEGORIES = [
   "전체",
@@ -44,6 +48,45 @@ export const ArticleFilters = ({
   showLikedOnly,
   onLikedOnlyChange
 }: ArticleFiltersProps) => {
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  useEffect(() => {
+    // Get initial user
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLoginClick = () => {
+    setShowLoginDialog(true);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const handleLoginSuccess = () => {
+    setShowLoginDialog(false);
+  };
+
+  const handleLikedOnlyChange = async (checked: boolean) => {
+    if (checked && !user) {
+      setShowLoginDialog(true);
+      return;
+    }
+    onLikedOnlyChange(checked);
+  };
+
   const getSortLabel = (option: SortOption) => {
     switch (option) {
       case "latest": return "최신순";
@@ -105,6 +148,36 @@ export const ArticleFilters = ({
             </Badge> */}
           </div>
 
+          {/* Login/Logout Button */}
+          <div className="flex items-center gap-2">
+            {user ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground hidden sm:inline">
+                  {user.email}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">로그아웃</span>
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLoginClick}
+                className="flex items-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">로그인</span>
+              </Button>
+            )}
+          </div>
+
           {/* Sort Options */}
           {/* <Select value={sortOption} onValueChange={(value) => onSortChange(value as SortOption)}>
             <SelectTrigger className="w-32">
@@ -140,16 +213,16 @@ export const ArticleFilters = ({
         )}
 
         {/* Liked Only Filter */}
-        {/* <div className="flex items-center gap-6 mb-4">
+        <div className="flex items-center gap-6 mb-4">
           <div className="flex items-center gap-2">
             <Heart className="w-4 h-4 text-red-500" />
             <span className="text-sm">좋아요한 글만</span>
             <Switch
               checked={showLikedOnly}
-              onCheckedChange={onLikedOnlyChange}
+              onCheckedChange={handleLikedOnlyChange}
             />
           </div>
-        </div> */}
+        </div>
 
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2">
@@ -176,6 +249,13 @@ export const ArticleFilters = ({
           })}
         </div>
       </div>
+      
+      {/* Login Dialog */}
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        onSuccess={handleLoginSuccess}
+      />
     </div>
   );
 };
