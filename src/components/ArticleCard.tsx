@@ -61,14 +61,41 @@ export const SOURCE_MAP: Record<string, ArticleSource> = {
   "techblog.lycorp.co.jp": {
     name: "라인",
     favicon: "https://techblog.lycorp.co.jp/favicon.ico"
+  },
+  "tech.inflab.com": {
+    name: "인프랩",
+    favicon: "https://tech.inflab.com/favicon-32x32.png"
+  },
+  "blog.banksalad.com": {
+    name: "뱅크샐러드",
+    favicon: "https://blog.banksalad.com/favicon-32x32.png"
+  },
+  "danawalab.github.io": {
+    name: "다나와",
+    favicon: "https://img.danawa.com/new/danawa_main/v1/img/danawa_favicon.ico"
+  },
+  "medium.com/musinsa-tech": {
+    name: "무신사",
+    favicon: "https://miro.medium.com/v2/1*Qs-0adxK8doDYyzZXMXkmg.png"
+  },
+  "medium.com/miridih": {
+    name: "미리디",
+    favicon: "https://miro.medium.com/v2/1*uNdurJkcAe2-UoseF_dxrQ.png"
+  },
+  "medium.com/daangn": {
+    name: "당근",
+    favicon: "https://miro.medium.com/v2/resize:fill:76:76/1*Bm8_nGjfNiKV0PASwiPELg.png"
   }
 }
 
 export const getSourceFromUrl = (url: string): ArticleSource => {
   const hostname = new URL(url).hostname;
   const subDomainName = hostname.split(".")[0];
+  const author = url.split("/")[3];
   if (SOURCE_MAP[hostname]) {
     return SOURCE_MAP[hostname];
+  } else if (SOURCE_MAP[`${hostname}/${author}`]) {
+    return SOURCE_MAP[`${hostname}/${author}`];
   }
   switch (true) {
     case hostname.includes("tistory.com"): {
@@ -79,6 +106,21 @@ export const getSourceFromUrl = (url: string): ArticleSource => {
     case hostname.includes("github.io"): {
       return {
         name: `github.io > ${subDomainName}`
+      }
+    }
+    case hostname.includes("medium.com"): {
+      return {
+        name: `medium.com > ${author}`
+      }
+    }
+    case hostname.includes("dev.to"): {
+      return {
+        name: `dev.to > ${author}`
+      }
+    }
+    case hostname.includes("velog.io"): {
+      return {
+        name: `velog.io > ${author}`
       }
     }
   }
@@ -205,7 +247,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
             </div>
           ) : (
             <div className="aspect-video overflow-hidden rounded-t-lg cursor-pointer" onClick={handleClick}>
-              <img src={sourceFallbackThumbnail} alt={sourceName} className="w-full h-full object-none group-hover:scale-105 transition-transform duration-300" />
+              <img src={sourceFallbackThumbnail || sourceFavicon} alt={sourceName} className="w-full h-full object-none group-hover:scale-105 transition-transform duration-300" />
             </div>
           )}
           
