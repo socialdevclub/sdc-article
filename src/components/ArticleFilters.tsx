@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { SlidersHorizontal, Heart, X, LogIn, LogOut, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { SlidersHorizontal, Heart, X, LogIn, LogOut, User, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoginDialog } from "./LoginDialog";
@@ -11,16 +12,16 @@ import { useScrollHideHeader } from "@/hooks/useScrollHideHeader";
 
 export const CATEGORIES = [
   "전체",
-  "생산성",
   "커리어", 
   "프론트엔드",
   "백엔드",
+  "SRE",
   "데이터엔지니어링",
   "DevOps",
-  "SRE",
   "AI",
   "SW엔지니어링",
   "개발팁",
+  "생산성",
   "QA",
   "PM/기획",
   "마케팅",
@@ -38,6 +39,8 @@ interface ArticleFiltersProps {
   totalCount: number;
   showLikedOnly: boolean;
   onLikedOnlyChange: (showLikedOnly: boolean) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
 export const ArticleFilters = ({
@@ -47,11 +50,19 @@ export const ArticleFilters = ({
   onSortChange,
   totalCount,
   showLikedOnly,
-  onLikedOnlyChange
+  onLikedOnlyChange,
+  searchQuery,
+  onSearchChange
 }: ArticleFiltersProps) => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [searchInput, setSearchInput] = useState(searchQuery); // 로컬 검색 입력용
   const isHeaderVisible = useScrollHideHeader(100);
+
+  // searchQuery가 외부에서 변경되면 searchInput도 동기화
+  useEffect(() => {
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
 
   useEffect(() => {
     // Get initial user
@@ -87,6 +98,16 @@ export const ArticleFilters = ({
       return;
     }
     onLikedOnlyChange(checked);
+  };
+
+  const handleSearch = () => {
+    onSearchChange(searchInput.trim());
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   const handleCategoryClick = (category: string) => {
@@ -178,8 +199,28 @@ export const ArticleFilters = ({
           </div>
         </div>
 
+        {/* Search Input */}
+        <div className="mb-4">
+          <div className="relative max-w-md flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="제목, 내용, 카테고리, 작성자로 검색..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="pl-10"
+              />
+            </div>
+            <Button onClick={handleSearch} size="default" className="px-4">
+              검색
+            </Button>
+          </div>
+        </div>
+
         {/* Category Filters */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex md:flex-wrap gap-2 overflow-x-auto scrollbar-hide pb-2">
           {CATEGORIES.map((category) => {
             const isSelected = selectedCategories.includes(category);
             return (
@@ -188,11 +229,11 @@ export const ArticleFilters = ({
                 variant={isSelected ? "default" : "outline"}
                 size="sm"
                 onClick={() => handleCategoryClick(category)}
-                className={
+                className={`flex-shrink-0 ${
                   isSelected
                     ? "bg-gradient-primary text-primary-foreground shadow-soft"
                     : "hover:bg-secondary/80 transition-smooth"
-                }
+                }`}
               >
                 {category}
                 {isSelected && category !== "전체" && (
