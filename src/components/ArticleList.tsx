@@ -38,9 +38,8 @@ export const ArticleList = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   
-  // URL에서 카테고리 파라미터 읽어오기
+  // URL에서 파라미터 읽어오기
   const getCategoriesFromURL = useCallback((): string[] => {
     const categoriesParam = searchParams.get('categories');
     if (!categoriesParam) return ["전체"];
@@ -49,8 +48,18 @@ export const ArticleList = () => {
     return categories.length > 0 ? categories : ["전체"];
   }, [searchParams]);
 
+  const getSortFromURL = useCallback((): SortOption => {
+    const sortParam = searchParams.get('sort') as SortOption;
+    return ['latest', 'popular:all', 'daily', 'weekly', 'monthly'].includes(sortParam) ? sortParam : 'latest';
+  }, [searchParams]);
+
+  const getSearchFromURL = useCallback((): string => {
+    return searchParams.get('search') || '';
+  }, [searchParams]);
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => getCategoriesFromURL());
-  const [sortOption, setSortOption] = useState<SortOption>("latest");
+  const [sortOption, setSortOption] = useState<SortOption>(() => getSortFromURL());
+  const [searchQuery, setSearchQuery] = useState(() => getSearchFromURL());
   const [showLikedOnly, setShowLikedOnly] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -81,11 +90,44 @@ export const ArticleList = () => {
     setSearchParams(newSearchParams);
   }, [searchParams, setSearchParams]);
 
+  // 정렬 변경 시 URL도 함께 업데이트
+  const handleSortChange = useCallback((newSort: SortOption) => {
+    setSortOption(newSort);
+    
+    // URL 쿼리스트링 업데이트
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (newSort === 'latest') {
+      newSearchParams.delete('sort');
+    } else {
+      newSearchParams.set('sort', newSort);
+    }
+    setSearchParams(newSearchParams);
+  }, [searchParams, setSearchParams]);
+
+  // 검색어 변경 시 URL도 함께 업데이트
+  const handleSearchChange = useCallback((newSearch: string) => {
+    setSearchQuery(newSearch);
+    
+    // URL 쿼리스트링 업데이트
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (!newSearch.trim()) {
+      newSearchParams.delete('search');
+    } else {
+      newSearchParams.set('search', newSearch);
+    }
+    setSearchParams(newSearchParams);
+  }, [searchParams, setSearchParams]);
+
   // URL 변경 감지하여 상태 동기화
   useEffect(() => {
     const categoriesFromURL = getCategoriesFromURL();
+    const sortFromURL = getSortFromURL();
+    const searchFromURL = getSearchFromURL();
+    
     setSelectedCategories(categoriesFromURL);
-  }, [getCategoriesFromURL]);
+    setSortOption(sortFromURL);
+    setSearchQuery(searchFromURL);
+  }, [getCategoriesFromURL, getSortFromURL, getSearchFromURL]);
 
   const handleLikedOnlyChange = async (checked: boolean) => {
     if (checked) {
@@ -429,12 +471,12 @@ export const ArticleList = () => {
           selectedCategories={selectedCategories}
           sortOption={sortOption}
           onCategoryChange={handleCategoryChange}
-          onSortChange={setSortOption}
+          onSortChange={handleSortChange}
           totalCount={0}
           showLikedOnly={showLikedOnly}
           onLikedOnlyChange={handleLikedOnlyChange}
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
         />
         <div className="max-w-screen-2xl mx-auto px-4 py-8">
           <Alert variant="destructive">
@@ -452,12 +494,12 @@ export const ArticleList = () => {
         selectedCategories={selectedCategories}
         sortOption={sortOption}
         onCategoryChange={handleCategoryChange}
-        onSortChange={setSortOption}
+        onSortChange={handleSortChange}
         totalCount={articles.length}
         showLikedOnly={showLikedOnly}
         onLikedOnlyChange={handleLikedOnlyChange}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
       />
 
       <div className="max-w-screen-2xl mx-auto px-4 py-8">
