@@ -8,16 +8,33 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { useIntersectionObserver } from "react-simplikit";
-import { getSourceFromUrl } from "@/lib/getSourceFromUrl";
+import { SOURCE_MAP } from "@/lib/getSourceFromUrl";
 
 type Article = Tables<"articles">;
 
 const ARTICLES_PER_PAGE = 20;
 
+// 검색어 파싱 함수: 일반 검색어와 소스 도메인을 분리
+const parseSearchQuery = (query: string) => {
+  // (domain) 형태로 감싸진 경우
+  const sourceMatch = query.match(/\((.*?)\)$/);
+  if (sourceMatch) {
+    const normalSearchTerm = query.replace(/\s*\(.*?\)$/, '').trim();
+    const sourceDomain = sourceMatch[1].trim();
+    return { normalSearchTerm, sourceDomain };
+  }
+  
+  // SOURCE_MAP에 있는 도메인인지 확인 (회사만 선택한 경우)
+  if (Object.keys(SOURCE_MAP).includes(query.trim())) {
+    return { normalSearchTerm: '', sourceDomain: query.trim() };
+  }
+  
+  return { normalSearchTerm: query, sourceDomain: '' };
+};
+
 export const ArticleList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
-  const [allArticles, setAllArticles] = useState<Article[]>([]); // 전체 아티클 저장용
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,30 +66,6 @@ export const ArticleList = () => {
       rootMargin: "100px"
     }
   );
-
-  // 검색 필터링 함수
-  const filterArticlesBySearch = useCallback((articlesToFilter: Article[], query: string): Article[] => {
-    if (!query.trim()) return articlesToFilter;
-
-    const searchTerm = query.toLowerCase().trim();
-    
-    return articlesToFilter.filter(article => {
-      // 제목 검색
-      const titleMatch = article.title.toLowerCase().includes(searchTerm);
-      
-      // 내용 검색
-      const contentMatch = article.content_summary.toLowerCase().includes(searchTerm);
-      
-      // 카테고리 검색
-      const categoryMatch = article.category.toLowerCase().includes(searchTerm);
-      
-      // 작성자 검색 (source_url에서 추출)
-      const sourceInfo = getSourceFromUrl(article.source_url);
-      const authorMatch = sourceInfo.name.toLowerCase().includes(searchTerm);
-      
-      return titleMatch || contentMatch || categoryMatch || authorMatch;
-    });
-  }, []);
 
   // 카테고리 변경 시 URL도 함께 업데이트
   const handleCategoryChange = useCallback((newCategories: string[]) => {
@@ -107,91 +100,14 @@ export const ArticleList = () => {
 
   const resetArticles = useCallback(() => {
     setArticles([]);
-    setAllArticles([]);
     setOffset(0);
     setHasMore(true);
     setError(null);
   }, []);
 
-  // 검색어나 필터 변경시 화면에 표시될 아티클 업데이트
-  const updateDisplayedArticles = useCallback(() => {
-    let filteredArticles = [...allArticles];
-
-    // 카테고리 필터 적용
-    if (!selectedCategories.includes("전체") && selectedCategories.length > 0) {
-      filteredArticles = filteredArticles.filter(article => 
-        selectedCategories.includes(article.category)
-      );
-    }
-
-    // 검색 필터 적용
-    filteredArticles = filterArticlesBySearch(filteredArticles, searchQuery);
-
-    // 정렬 적용 (최신순만 지원, 인기순은 별도 처리)
-    if (sortOption === "latest") {
-      filteredArticles.sort((a, b) => 
-        new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
-      );
-    }
-
-    setArticles(filteredArticles);
-    setHasMore(false); // 클라이언트 필터링시 무한스크롤 비활성화
-  }, [allArticles, selectedCategories, searchQuery, filterArticlesBySearch, sortOption]);
-
-
-  // 전체 아티클을 가져오는 함수 (검색/필터링용)
-  const fetchAllArticles = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      let query = supabase.from("articles").select("*");
-
-      // Liked only filter
-      if (showLikedOnly) {
-        const user = await supabase.auth.getUser();
-        if (!user.data.user) {
-          setError("좋아요한 글을 보려면 로그인이 필요합니다.");
-          setLoading(false);
-          return;
-        }
-        
-        const { data: likedArticles } = await supabase
-          .from("likes")
-          .select("article_id")
-          .eq("user_id", user.data.user.id);
-        
-        if (!likedArticles || likedArticles.length === 0) {
-          setAllArticles([]);
-          setArticles([]);
-          setLoading(false);
-          return;
-        }
-        
-        const likedArticleIds = likedArticles.map(like => like.article_id);
-        query = query.in("id", likedArticleIds);
-      }
-
-      // 최신순 정렬
-      query = query.order("published_at", { ascending: false });
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const fetchedArticles = data || [];
-      setAllArticles(fetchedArticles);
-      
-    } catch (err) {
-      console.error("Error fetching all articles:", err);
-      setError("아티클을 불러오는데 실패했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }, [showLikedOnly]);
-
+  // 인기순 아티클 fetch (기존 로직 유지)
   const fetchPopularArticles = useCallback(async (currentOffset: number, isLoadMore: boolean) => {
     try {
-      // 인기순일 때는 기존 로직 유지 (무한스크롤 지원)
       // 시간 범위 계산
       const now = new Date();
       let timeFilter: Date;
@@ -208,6 +124,9 @@ export const ArticleList = () => {
           break;
         case "popular:all":
           timeFilter = new Date(0);
+          break;
+        default:
+          timeFilter = new Date(0);
       }
 
       // 아티클과 해당 기간의 좋아요 수를 함께 조회
@@ -219,12 +138,12 @@ export const ArticleList = () => {
         `)
         .gte("likes.created_at", timeFilter.toISOString());
 
-      // Category filter (검색어가 있으면 서버 필터 생략)
+      // 카테고리 필터 (검색어가 없을 때만 서버 필터 적용)
       if (!selectedCategories.includes("전체") && selectedCategories.length > 0 && !searchQuery.trim()) {
         baseQuery = baseQuery.in("category", selectedCategories);
       }
 
-      // Liked only filter
+      // 좋아요한 글만 보기 필터
       if (showLikedOnly) {
         const user = await supabase.auth.getUser();
         if (!user.data.user) {
@@ -253,8 +172,26 @@ export const ArticleList = () => {
         baseQuery = baseQuery.in("id", likedArticleIds);
       }
 
+      // 검색 필터 적용
+      if (searchQuery.trim()) {
+        const { normalSearchTerm, sourceDomain } = parseSearchQuery(searchQuery.trim());
+        
+        if (sourceDomain && normalSearchTerm) {
+          // 일반 검색어와 소스 도메인 모두 있는 경우 - AND 조건
+          baseQuery = baseQuery
+            .or(`title.ilike.%${normalSearchTerm}%,content_summary.ilike.%${normalSearchTerm}%,category.ilike.%${normalSearchTerm}%`)
+            .ilike('source_url', `%${sourceDomain}%`);
+        } else if (sourceDomain) {
+          // 소스 도메인만 있는 경우
+          baseQuery = baseQuery.ilike('source_url', `%${sourceDomain}%`);
+        } else if (normalSearchTerm) {
+          // 일반 검색어만 있는 경우 (source_url도 포함)
+          baseQuery = baseQuery.or(`title.ilike.%${normalSearchTerm}%,content_summary.ilike.%${normalSearchTerm}%,category.ilike.%${normalSearchTerm}%,source_url.ilike.%${normalSearchTerm}%`);
+        }
+      }
+
       // 모든 아티클과 해당 좋아요 수를 가져와서 클라이언트에서 정렬
-      const { data: articlesWithLikes, error } = await baseQuery
+      const { data: articlesWithLikes, error } = await baseQuery;
       
       if (error) throw error;
 
@@ -304,6 +241,23 @@ export const ArticleList = () => {
         }
       }
 
+      if (searchQuery.trim()) {
+        const { normalSearchTerm, sourceDomain } = parseSearchQuery(searchQuery.trim());
+        
+        if (sourceDomain && normalSearchTerm) {
+          // 일반 검색어와 소스 도메인 모두 있는 경우 - AND 조건
+          allArticlesQuery = allArticlesQuery
+            .or(`title.ilike.%${normalSearchTerm}%,content_summary.ilike.%${normalSearchTerm}%,category.ilike.%${normalSearchTerm}%`)
+            .ilike('source_url', `%${sourceDomain}%`);
+        } else if (sourceDomain) {
+          // 소스 도메인만 있는 경우
+          allArticlesQuery = allArticlesQuery.ilike('source_url', `%${sourceDomain}%`);
+        } else if (normalSearchTerm) {
+          // 일반 검색어만 있는 경우 (source_url도 포함)
+          allArticlesQuery = allArticlesQuery.or(`title.ilike.%${normalSearchTerm}%,content_summary.ilike.%${normalSearchTerm}%,category.ilike.%${normalSearchTerm}%,source_url.ilike.%${normalSearchTerm}%`);
+        }
+      }
+
       const { data: allArticles } = await allArticlesQuery;
       
       if (allArticles) {
@@ -319,12 +273,7 @@ export const ArticleList = () => {
         .sort((a, b) => b.likesCount - a.likesCount)
         .map(item => item.article);
 
-      // 검색어가 있으면 클라이언트 사이드 필터링 적용
-      if (searchQuery.trim()) {
-        sortedArticles = filterArticlesBySearch(sortedArticles, searchQuery);
-      }
-
-      // 카테고리 필터링 (검색어가 있을 때만)
+      // 카테고리 필터링 (검색어가 있을 때만 클라이언트 사이드)
       if (searchQuery.trim() && !selectedCategories.includes("전체") && selectedCategories.length > 0) {
         sortedArticles = sortedArticles.filter(article => 
           selectedCategories.includes(article.category)
@@ -356,60 +305,122 @@ export const ArticleList = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedCategories, showLikedOnly, sortOption, searchQuery, filterArticlesBySearch]);
+  }, [selectedCategories, showLikedOnly, sortOption, searchQuery]);
 
-
+  // 통합된 아티클 fetch 함수 (페이지네이션과 검색 지원)
   const fetchArticles = useCallback(async (currentOffset: number = 0, isLoadMore: boolean = false) => {
     try {
-      // 인기순 정렬의 경우 특별 처리
+      if (!isLoadMore) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      setError(null);
+
+      // 인기순 정렬 처리 (기존 로직 유지)
       if (sortOption === "daily" || sortOption === "weekly" || sortOption === "monthly" || sortOption === "popular:all") {
-        if (!isLoadMore) {
-          setLoading(true);
-        } else {
-          setLoadingMore(true);
-        }
-        setError(null);
         await fetchPopularArticles(currentOffset, isLoadMore);
         return;
       }
 
-      // 검색어가 있거나 최신순일 때는 모든 아티클을 가져와서 클라이언트에서 필터링
-      if (searchQuery.trim() || sortOption === "latest") {
-        if (!isLoadMore) {
-          await fetchAllArticles();
+      // 기본 쿼리 설정
+      let query = supabase.from("articles").select("*");
+
+      // 좋아요한 글만 보기 필터
+      if (showLikedOnly) {
+        const user = await supabase.auth.getUser();
+        if (!user.data.user) {
+          setError("좋아요한 글을 보려면 로그인이 필요합니다.");
+          setLoading(false);
+          setLoadingMore(false);
+          return;
         }
-        return;
+        
+        const { data: likedArticles } = await supabase
+          .from("likes")
+          .select("article_id")
+          .eq("user_id", user.data.user.id);
+        
+        if (!likedArticles || likedArticles.length === 0) {
+          if (!isLoadMore) {
+            setArticles([]);
+          }
+          setHasMore(false);
+          setLoading(false);
+          setLoadingMore(false);
+          return;
+        }
+        
+        const likedArticleIds = likedArticles.map(like => like.article_id);
+        query = query.in("id", likedArticleIds);
       }
+
+      // 카테고리 필터 (서버 사이드)
+      if (!selectedCategories.includes("전체") && selectedCategories.length > 0) {
+        query = query.in("category", selectedCategories);
+      }
+
+      // 검색 필터 (서버 사이드)
+      if (searchQuery.trim()) {
+        const { normalSearchTerm, sourceDomain } = parseSearchQuery(searchQuery.trim());
+        
+        if (sourceDomain && normalSearchTerm) {
+          // 일반 검색어와 소스 도메인 모두 있는 경우 - AND 조건
+          query = query
+            .or(`title.ilike.%${normalSearchTerm}%,content_summary.ilike.%${normalSearchTerm}%,category.ilike.%${normalSearchTerm}%`)
+            .ilike('source_url', `%${sourceDomain}%`);
+        } else if (sourceDomain) {
+          // 소스 도메인만 있는 경우
+          query = query.ilike('source_url', `%${sourceDomain}%`);
+        } else if (normalSearchTerm) {
+          // 일반 검색어만 있는 경우 (source_url도 포함)
+          query = query.or(`title.ilike.%${normalSearchTerm}%,content_summary.ilike.%${normalSearchTerm}%,category.ilike.%${normalSearchTerm}%,source_url.ilike.%${normalSearchTerm}%`);
+        }
+      }
+
+      // 정렬 (최신순)
+      query = query.order("published_at", { ascending: false });
+
+      // 페이지네이션
+      query = query.range(currentOffset, currentOffset + ARTICLES_PER_PAGE - 1);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const fetchedArticles = data || [];
+
+      if (isLoadMore) {
+        setArticles(prev => [...prev, ...fetchedArticles]);
+      } else {
+        setArticles(fetchedArticles);
+      }
+
+      // 더 이상 데이터가 없는지 확인
+      setHasMore(fetchedArticles.length === ARTICLES_PER_PAGE);
+      setOffset(currentOffset + fetchedArticles.length);
 
     } catch (err) {
       console.error("Error fetching articles:", err);
       setError("아티클을 불러오는데 실패했습니다.");
+    } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [sortOption, searchQuery, fetchPopularArticles, fetchAllArticles]); 
-   
-  // 검색어나 카테고리 변경시 화면 업데이트
-  useEffect(() => {
-    if (sortOption === "latest" || searchQuery.trim()) {
-      updateDisplayedArticles();
-    }
-  }, [sortOption, searchQuery, updateDisplayedArticles]);
+  }, [sortOption, showLikedOnly, selectedCategories, searchQuery, fetchPopularArticles]);
 
-  // Intersection Observer로 무한 스크롤 처리 (인기순일 때만)
+  // Intersection Observer로 무한 스크롤 처리
   useEffect(() => {
-    if (isIntersecting && hasMore && !loadingMore && !loading && 
-        (sortOption === "daily" || sortOption === "weekly" || sortOption === "monthly" || sortOption === "popular:all")) {
-      const newOffset = offset + ARTICLES_PER_PAGE;
+    if (isIntersecting && hasMore && !loadingMore && !loading) {
+      const newOffset = offset;
       fetchArticles(newOffset, true);
     }
-  }, [isIntersecting, hasMore, loadingMore, loading, offset, fetchArticles, sortOption]);
+  }, [isIntersecting, hasMore, loadingMore, loading, offset, fetchArticles]);
 
   // 필터 변경시 아티클 리셋 후 다시 로딩
   useEffect(() => {
     resetArticles();
     fetchArticles(0, false);
-  }, [selectedCategories, sortOption, showLikedOnly, fetchArticles, resetArticles]);
+  }, [selectedCategories, sortOption, showLikedOnly, searchQuery, fetchArticles, resetArticles]);
 
   if (error) {
     return (
