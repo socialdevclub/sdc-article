@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback, memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Heart } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { LoginDialog } from "./LoginDialog";
+import { ArticleLikes } from "./ArticleLikes";
 import { gtagEvent, htmlToPlainText } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
-import { useArticleLikes } from "@/hooks/useArticleLikes";
+import { useImpressionRef } from "react-simplikit";
 import { getSourceFromUrl } from "@/lib/getSourceFromUrl";
 
 type Article = Tables<"articles">;
@@ -17,9 +17,16 @@ interface ArticleCardProps {
 
 export const ArticleCard = memo(({ article }: ArticleCardProps) => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [shouldFetchLikes, setShouldFetchLikes] = useState(false);
   
-  const { isAuthenticated } = useAuth();
-  const { likesCount, isLiked, toggleLike, isToggling } = useArticleLikes(article.id);
+  // Impression tracking으로 화면에 보일 때만 데이터 페칭 시작
+  const impressionRef = useImpressionRef({
+    onImpressionStart: () => {
+      setShouldFetchLikes(true);
+    },
+    rootMargin: '100px',
+    areaThreshold: 0.1,
+  });
 
   const source = useMemo(() => getSourceFromUrl(article.source_url), [article.source_url]);
   const sourceName = source?.name;
@@ -47,25 +54,18 @@ export const ArticleCard = memo(({ article }: ArticleCardProps) => {
     });
   }, [article.published_at, article.created_at]);
 
-  const handleLike = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    if (!isAuthenticated) {
-      setShowLoginDialog(true);
-      return;
-    }
-
-    toggleLike();
-  }, [isAuthenticated, toggleLike]);
+  const handleShowLogin = useCallback(() => {
+    setShowLoginDialog(true);
+  }, []);
 
   const handleLoginSuccess = useCallback(() => {
-    // 로그인 성공 시 좋아요 데이터는 자동으로 refetch됩니다
     setShowLoginDialog(false);
   }, []);
 
   return (
     <>
       <Card 
+        ref={impressionRef}
         className="group bg-gradient-card border-border shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 w-full"
       >
         <CardContent className="p-0" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -124,12 +124,13 @@ export const ArticleCard = memo(({ article }: ArticleCardProps) => {
                 <span className="text-xs text-muted-foreground">{sourceName || article.source_url}</span>
               </div>
 
-              <div className="flex items-center gap-4 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors" onClick={handleLike}>
-                {/* Likes */}
-                <div className="flex items-center gap-1">
-                  <Heart className={`w-3 h-3 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'}`} />
-                  <span>{likesCount}</span>
-                </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                {/* Likes - 화면에 보일 때만 데이터 페칭 */}
+                <ArticleLikes 
+                  articleId={article.id} 
+                  onShowLogin={handleShowLogin}
+                  enabled={shouldFetchLikes}
+                />
               </div>
             </div>
           </div>

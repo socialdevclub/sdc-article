@@ -4,7 +4,7 @@ import { useAuth } from "./useAuth";
 
 const LIKES_QUERY_KEY = (articleId: string) => ["likes", articleId];
 
-export const useArticleLikes = (articleId: string) => {
+export const useArticleLikes = (articleId: string, enabled: boolean = true) => {
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
@@ -37,6 +37,7 @@ export const useArticleLikes = (articleId: string) => {
         isLiked,
       };
     },
+    enabled,
     staleTime: 1000 * 60 * 2, // 2분 동안 캐시 유지
     gcTime: 1000 * 60 * 5, // 5분 동안 가비지 컬렉션 방지
   });
